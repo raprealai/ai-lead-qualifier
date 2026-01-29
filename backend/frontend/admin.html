@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin – Leads</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f4f4f4;
+    }
+    .hot { color: red; font-weight: bold; }
+    .warm { color: orange; font-weight: bold; }
+    .cold { color: gray; }
+  </style>
+</head>
+<body>
+
+<h1>Admin – Leads</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Score</th>
+      <th>Intent</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody id="leads"></tbody>
+</table>
+
+<script>
+async function loadLeads() {
+  const res = await fetch('/api/leads');
+  const leads = await res.json();
+
+  const tbody = document.getElementById('leads');
+  tbody.innerHTML = '';
+
+  leads.forEach(lead => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${lead.id}</td>
+      <td>${lead.name || ''}</td>
+      <td>${lead.email || ''}</td>
+      <td>${lead.score}</td>
+      <td class="${lead.intent}">${lead.intent}</td>
+      <td>${lead.created_at}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+loadLeads();
+</script>
+
+</body>
+</html>
+
