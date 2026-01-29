@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Lead Qualifier</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 8px;
+    }
+    button { cursor: pointer; }
+    .result {
+      margin-top: 20px;
+      padding: 12px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<h1>AI Lead Qualifier</h1>
+
+<input id="name" placeholder="Name" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Lead Qualifier</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 8px;
+    }
+    button { cursor: pointer; }
+    .result {
+      margin-top: 20px;
+      padding: 12px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<h1>AI Lead Qualifier</h1>
+
+<input id="name" placeholder="Name" />
+<input id="email" placeholder="Email" />
+<textarea id="message" placeholder="Message"></textarea>
+<button onclick="submitLead()">Submit</button>
+
+<div id="result" class="result" style="display:none;"></div>
+
+<script>
+async function submitLead() {
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const message = document.getElementById('message').value;
+
+  const res = await fetch('/leads', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, message })
+  });
+
+  const data = await res.json();
+
+  const resultDiv = document.getElementById('result');
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = `
+    <strong>Score:</strong> ${data.score}<br/>
+    <strong>Intent:</strong> ${data.intent}<br/>
+    <strong>Summary:</strong> ${data.summary}<br/>
+    <strong>Reasons:</strong>
+    <ul>${data.reasons.map(r => `<li>${r}</li>`).join('')}</ul>
+  `;
+}
+</script>
+
+</body>
+</html>
+

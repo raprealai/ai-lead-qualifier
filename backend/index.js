@@ -1,13 +1,26 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = 4000;
+
+// ABSOLUTE frontend path (no ambiguity)
+const FRONTEND_PATH = path.join(__dirname, 'frontend');
+console.log('Serving frontend from:', FRONTEND_PATH);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve frontend files
+app.use('/app', express.static(FRONTEND_PATH));
+
+// Explicit route (NO root confusion)
+app.get('/app', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PATH, 'index.html'));
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -17,19 +30,43 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Lead intake endpoint
+// Lead intake endpoint (mock AI scoring)
 app.post('/leads', (req, res) => {
-  console.log('Incoming lead:', req.body);
+  const { message } = req.body;
+
+  let score = 0;
+  let reasons = [];
+
+  if (message.toLowerCase().includes('price')) {
+    score += 30;
+    reasons.push('Asked about pricing');
+  }
+  if (message.toLowerCase().includes('demo')) {
+    score += 30;
+    reasons.push('Requested a demo');
+  }
+  if (message.toLowerCase().includes('month')) {
+    score += 20;
+    reasons.push('Shows urgency');
+  }
+
+  let intent = 'cold';
+  if (score >= 70) intent = 'hot';
+  else if (score >= 40) intent = 'warm';
 
   res.json({
-    received: true,
-    lead: req.body,
-    score: null,
-    intent: "unscored"
+    score,
+    intent,
+    reasons,
+    summary: intent === 'hot'
+      ? 'High-intent lead ready for sales follow-up'
+      : 'Lower intent lead'
   });
 });
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ Frontend available at http://localhost:${PORT}/app`);
 });
 
