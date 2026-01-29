@@ -3,20 +3,22 @@ const path = require('path');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 
-// ===== App =====
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 // ===== Middleware =====
 app.use(cors());
 app.use(express.json());
 
-// ===== Static Frontend =====
+// ===== Frontend =====
 const FRONTEND_PATH = path.join(__dirname, 'frontend');
 app.use(express.static(FRONTEND_PATH));
 
-// ===== Database =====
-const dbPath = path.join(__dirname, 'leads.db');
+// ===== Database (PERSISTENT ON RENDER) =====
+const dbPath = process.env.RENDER
+  ? '/data/leads.db'
+  : path.join(__dirname, 'leads.db');
+
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
@@ -40,27 +42,34 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'AI Lead Qualifier API' });
 });
 
-// ===== Lead Intake (mock scoring + save) =====
+// ===== Lead Intake =====
 app.post('/leads', (req, res) => {
   const { name, email, message } = req.body;
-  if (!message) return res.status(400).json({ error: 'Message is required' });
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
 
   let score = 0;
   let reasons = [];
   const msg = message.toLowerCase();
 
   if (msg.includes('price') || msg.includes('pricing')) {
-    score += 30; reasons.push('Asked about pricing');
+    score += 30;
+    reasons.push('Asked about pricing');
   }
   if (msg.includes('demo')) {
-    score += 30; reasons.push('Requested a demo');
+    score += 30;
+    reasons.push('Requested a demo');
   }
   if (msg.includes('month') || msg.includes('urgent') || msg.includes('asap')) {
-    score += 20; reasons.push('Shows urgency');
+    score += 20;
+    reasons.push('Shows urgency');
   }
   if (msg.includes('budget')) {
-    score += 20; reasons.push('Mentions budget');
+    score += 20;
+    reasons.push('Mentions budget');
   }
+
   if (score > 100) score = 100;
 
   let intent = 'cold';
@@ -76,13 +85,23 @@ app.post('/leads', (req, res) => {
 
   db.run(
     `
-      INSERT INTO leads (name, email, message, score, intent, reasons, summary)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO leads (name, email, message, score, intent, reasons, summary)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
     [name, email, message, score, intent, JSON.stringify(reasons), summary],
     function (err) {
-      if (err) return res.status(500).json({ error: 'Failed to save lead' });
-      res.json({ id: this.lastID, score, intent, reasons, summary });
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Failed to save lead' });
+      }
+
+      res.json({
+        id: this.lastID,
+        score,
+        intent,
+        reasons,
+        summary
+      });
     }
   );
 });
@@ -91,22 +110,26 @@ app.post('/leads', (req, res) => {
 app.get('/api/leads', (req, res) => {
   db.all(
     `
-      SELECT id, name, email, score, intent, created_at
-      FROM leads
-      ORDER BY created_at DESC
+    SELECT id, name, email, score, intent, created_at
+    FROM leads
+    ORDER BY created_at DESC
     `,
     [],
     (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Failed to fetch leads' });
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Failed to fetch leads' });
+      }
       res.json(rows);
     }
   );
 });
 
-// ===== Start =====
+// ===== Start Server =====
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`✅ App → http://localhost:${PORT}/index.html`);
-  console.log(`✅ Admin → http://localhost:${PORT}/admin.html`);
+  console.log(`✅ App → /index.html`);
+  console.log(`✅ Admin → /admin.html`);
+  console.log(`✅ DB path → ${dbPath}`);
 });
 
